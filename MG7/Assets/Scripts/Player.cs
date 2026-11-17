@@ -18,14 +18,12 @@ public class Player : MonoBehaviour
     private Rigidbody _seedRB;
     private Collider _seedCollider;
 
-    // ------------------------------------------------------------------------
-    private void Start ()
+    private void Start()
     {
         _cameraTrans = Camera.main.transform;
         Cursor.lockState = CursorLockMode.Locked;
     }
 
-    // ------------------------------------------------------------------------
     private void Update()
     {
         LookAndMove();
@@ -43,60 +41,42 @@ public class Player : MonoBehaviour
         }
     }
 
-    // ------------------------------------------------------------------------
-    private void SpawnSeed ()
+    private void SpawnSeed()
     {
         _isHoldingSeed = true;
 
-        // STEP 4 -------------------------------------------------------------
-        // Fix this line so that the Player GameObject is the PARENT of the seed.
-        // That way, the seed will move with the player.
-
-        GameObject seed = Instantiate(_seedPrefab);
-
-        // STEP 4 -------------------------------------------------------------
+        // Step 4: Parent the seed to the player.
+        GameObject seed = Instantiate(_seedPrefab, transform);
 
         _seedRB = seed.GetComponent<Rigidbody>();
         _seedRB.isKinematic = true;
         _seedCollider = seed.GetComponent<Collider>();
         _seedCollider.enabled = false;
 
-        // STEP 5 -------------------------------------------------------------
-        // Set the position of the seed to be DIRECLTY TO THE LEFT of the PLAYER.
-        // You might want to use _spawnUp and _spawnLeft to put the seed to the
-        //      left and slightly above the player.
-        // You will probably also need Transform.TransformDirection() ;)
-
-        
-        // STEP 5 -------------------------------------------------------------
+        // Step 5: Place the seed to the player's left and slightly above.
+        Vector3 localOffset = Vector3.left * _spawnLeft + Vector3.up * _spawnUp;
+        seed.transform.position = transform.position
+            + transform.TransformDirection(localOffset);
     }
-    
-    // ------------------------------------------------------------------------
-    private void ThrowSeed ()
+
+    private void ThrowSeed()
     {
         _isHoldingSeed = false;
+        _seedRB.transform.SetParent(null, true);
         _seedRB.isKinematic = false;
         _seedCollider.enabled = true;
 
         Vector3 throwDirection =
-            transform.TransformDirection(Vector3.up + Vector3.forward) *
-            _throwForce;
+            transform.TransformDirection(Vector3.up + Vector3.forward);
         _seedRB.AddForce(throwDirection * _throwForce, ForceMode.Impulse);
-
-        _seedRB.gameObject.transform.parent = null;
 
         _seedRB = null;
         _seedCollider = null;
 
-        // STEP 7 -------------------------------------------------------------
-        // Set the animation parameters to play the throwing animation.
-        
-
-
-        // STEP 7 -------------------------------------------------------------
+        // Step 7: Trigger the throwing animation.
+        _animator.SetTrigger("Throw");
     }
 
-    // ------------------------------------------------------------------------
     private void LookAndMove()
     {
         float mouseY = Input.GetAxis("Mouse Y");
@@ -111,17 +91,11 @@ public class Player : MonoBehaviour
 
         float vertical = Input.GetAxis("Vertical");
         float horizontal = Input.GetAxis("Horizontal");
-        transform.Translate(
-            ((vertical * Vector3.forward) + (horizontal * Vector3.right))
-            * _moveSpeed * Time.deltaTime
-        );
+        Vector3 movement = vertical * Vector3.forward + horizontal * Vector3.right;
+        transform.Translate(movement * _moveSpeed * Time.deltaTime);
 
-        // STEP 8 -------------------------------------------------------------
-        // Set the animation parameters to play the walking animation.
-        // You might need the mouseY, mouseX, vertical, and horizontal variables
-        //      that are above this step :)
-
-
-        // STEP 8 -------------------------------------------------------------
+        // Step 8: Play the walking animation while moving.
+        bool isWalking = movement.sqrMagnitude > 0.0001f;
+        _animator.SetBool("IsWalking", isWalking);
     }
 }
